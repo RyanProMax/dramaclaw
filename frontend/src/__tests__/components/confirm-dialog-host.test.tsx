@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Elastic-2.0
 // Copyright (c) 2026 ClaymoreLab
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -38,6 +38,23 @@ describe("ConfirmDialogHost", () => {
     expect(await screen.findByText("终止不会退还积分")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "common.cancel" }));
 
+    await expect(pending).resolves.toBe(false);
+  });
+
+  it("keeps keyboard focus in the confirmation after an ignored backdrop click", async () => {
+    const user = userEvent.setup();
+    render(<ConfirmDialogHost />);
+    let pending!: Promise<boolean>;
+    act(() => {
+      pending = confirmDialog({ description: "修改名称？" });
+    });
+    const cancel = await screen.findByRole("button", { name: "common.cancel" });
+    await waitFor(() => expect(cancel).toHaveFocus());
+
+    await user.click(document.querySelector('[data-slot="alert-dialog-overlay"]')!);
+
+    expect(cancel).toHaveFocus();
+    await user.keyboard("{Escape}");
     await expect(pending).resolves.toBe(false);
   });
 
